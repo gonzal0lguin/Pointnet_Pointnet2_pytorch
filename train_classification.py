@@ -10,7 +10,7 @@ import numpy as np
 
 import datetime
 import logging
-import provider
+import pointnet_pytorch.provider as provider
 import importlib
 import shutil
 import argparse

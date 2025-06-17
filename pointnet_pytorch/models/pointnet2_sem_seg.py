@@ -1,12 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from models.pointnet2_utils import PointNetSetAbstraction,PointNetFeaturePropagation
+from pointnet_pytorch.models.pointnet2_utils import PointNetSetAbstraction, PointNetFeaturePropagation
 
 
 class get_model(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, in_dim, num_classes):
         super(get_model, self).__init__()
-        self.sa1 = PointNetSetAbstraction(1024, 0.1, 32, 9 + 3, [32, 32, 64], False)
+        self.sa1 = PointNetSetAbstraction(in_dim, 0.1, 32, 4 + 3, [32, 32, 64], False)
         self.sa2 = PointNetSetAbstraction(256, 0.2, 32, 64 + 3, [64, 64, 128], False)
         self.sa3 = PointNetSetAbstraction(64, 0.4, 32, 128 + 3, [128, 128, 256], False)
         self.sa4 = PointNetSetAbstraction(16, 0.8, 32, 256 + 3, [256, 256, 512], False)
@@ -49,7 +49,29 @@ class get_loss(nn.Module):
         return total_loss
 
 if __name__ == '__main__':
+    # import  torch
+    # model = get_model(13)
+    # xyz = torch.rand(6, 9, 2048)
+    # (model(xyz))
     import  torch
-    model = get_model(13)
-    xyz = torch.rand(6, 9, 2048)
-    (model(xyz))
+    import time
+
+    # torch.cuda.empty_cache()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = get_model(in_dim=5120//2*3, num_classes=2).to(device)
+        
+    xyz = torch.rand(1, 4, 5120//2*3).to(device)
+    # pad = torch.zeros(16, 6, 5120)
+    # xyz = torch.cat((xyz, pad), dim=1).to(device)
+    print("lidar size", xyz.size())
+
+    for _ in range(3):
+        start = time.time()
+        out = model(xyz)
+        print(out[0].shape, out[1].shape)
+        # print(out.shape)
+        print(time.time() - start)
+
+    # print(torch.argmax(out[0][0, :, :], dim=1).cpu().numpy())
+
+    

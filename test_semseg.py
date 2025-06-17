@@ -12,7 +12,7 @@ from pathlib import Path
 import sys
 import importlib
 from tqdm import tqdm
-import provider
+import pointnet_pytorch.provider as provider
 import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

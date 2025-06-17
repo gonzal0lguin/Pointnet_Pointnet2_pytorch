@@ -10,7 +10,7 @@ import logging
 import sys
 import importlib
 import shutil
-import provider
+import pointnet_pytorch.provider as provider
 import numpy as np
 
 from pathlib import Path
