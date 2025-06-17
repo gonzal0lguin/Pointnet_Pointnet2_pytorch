@@ -110,6 +110,7 @@ def main(args):
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
     testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
                                                  pin_memory=True, drop_last=True)
+    
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
@@ -191,6 +192,7 @@ def main(args):
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
             optimizer.zero_grad()
 
+            points, target = points.float().cuda(), target.long().cuda()
             points = points.permute(0, 2, 1)
 
             seg_pred, trans_feat = classifier(points)
@@ -238,6 +240,7 @@ def main(args):
             # haces que funcione aca y estariamos po comparukini (creo?) + el setup en docker en el server ofcourse
             for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
                 
+                points, target = points.float().cuda(), target.long().cuda()
                 points = points.permute(0, 2, 1)
 
                 seg_pred, trans_feat = classifier(points)
