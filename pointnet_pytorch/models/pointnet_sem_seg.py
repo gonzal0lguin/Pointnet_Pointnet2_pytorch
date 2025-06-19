@@ -7,10 +7,10 @@ from pointnet_utils import PointNetEncoder, feature_transform_reguliarzer
 
 
 class get_model(nn.Module):
-    def __init__(self, num_class):
+    def __init__(self, in_dim, num_class):
         super(get_model, self).__init__()
         self.k = num_class
-        self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=9)
+        self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=4)
         self.conv1 = torch.nn.Conv1d(1088, 512, 1)
         self.conv2 = torch.nn.Conv1d(512, 256, 1)
         self.conv3 = torch.nn.Conv1d(256, 128, 1)
@@ -45,6 +45,11 @@ class get_loss(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    model = get_model(13)
-    xyz = torch.rand(12, 3, 2048)
-    (model(xyz))
+    from time import time
+    model = get_model(2)
+    xyz = torch.rand(16, 4, 7680)
+    
+    for i in range(3):
+        t0 = time()
+        print(model(xyz)[1].shape)
+        print(time() - t0)

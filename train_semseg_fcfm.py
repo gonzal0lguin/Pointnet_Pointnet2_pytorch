@@ -118,7 +118,12 @@ def main(args):
 
     '''MODEL LOADING'''
     # MODEL = importlib.import_module(args.model)
-    from pointnet_pytorch.models.pointnet2_sem_seg import get_model, get_loss
+    if args.model == 'pointnet2_sem_seg':
+        from pointnet_pytorch.models.pointnet2_sem_seg import get_model, get_loss
+    elif args.models == 'pointnet_sem_seg':
+        from pointnet_pytorch.models.pointnet_sem_seg import get_model, get_loss
+
+
     shutil.copy('pointnet_pytorch/models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('pointnet_pytorch/models/pointnet2_utils.py', str(experiment_dir))
 
@@ -264,17 +269,17 @@ def main(args):
                     total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
             labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6))
+            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6))
             log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
             log_string('eval point avg class IoU: %f' % (mIoU))
             log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
             log_string('eval point avg class acc: %f' % (
-                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
+                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=float) + 1e-6))))
 
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):
                 iou_per_class_str += 'class %s weight: %.3f, IoU: %.3f \n' % (
-                    seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])), labelweights[l - 1],
+                    seg_label_to_cat[l] + ' ' * (3 - len(seg_label_to_cat[l])), labelweights[l - 1],
                     total_correct_class[l] / float(total_iou_deno_class[l]))
 
             log_string(iou_per_class_str)
