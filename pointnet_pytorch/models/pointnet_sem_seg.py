@@ -3,13 +3,13 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.utils.data
 import torch.nn.functional as F
-from pointnet_utils import PointNetEncoder, feature_transform_reguliarzer
+from pointnet_pytorch.models.pointnet_utils import PointNetEncoder, feature_transform_reguliarzer
 
 
 class get_model(nn.Module):
-    def __init__(self, in_dim, num_class):
+    def __init__(self, in_dim, num_classes):
         super(get_model, self).__init__()
-        self.k = num_class
+        self.k = num_classes
         self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=4)
         self.conv1 = torch.nn.Conv1d(1088, 512, 1)
         self.conv2 = torch.nn.Conv1d(512, 256, 1)
@@ -23,6 +23,7 @@ class get_model(nn.Module):
         batchsize = x.size()[0]
         n_pts = x.size()[2]
         x, trans, trans_feat = self.feat(x)
+        print(x.shape, trans_feat.shape)
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
@@ -46,7 +47,7 @@ class get_loss(torch.nn.Module):
 
 if __name__ == '__main__':
     from time import time
-    model = get_model(2)
+    model = get_model(0, 2)
     xyz = torch.rand(16, 4, 7680)
     
     for i in range(3):

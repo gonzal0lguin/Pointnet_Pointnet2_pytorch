@@ -78,7 +78,12 @@ class FCFMDataset(Dataset):
 
         for file in tqdm(self.data_paths, total=len(self.data_paths), desc="Preloading data..."):
             filepath = os.path.join(self.data_root, file)
-            cloud_data = np.stack(self._read_pkl(filepath)[self.cloud_name]).reshape(-1, 5)  # xyzil, N*5
+            if self.cloud_name == 'lidar_dn':
+                cloud_data = np.stack(self._read_pkl(filepath)[self.cloud_name]).reshape(-1, 5)  # xyzil, N*5
+            else:
+                raw_lidar = self._read_pkl(filepath)[self.cloud_name]
+                cloud_data = self._process_lidar(raw_lidar, max_points=self.num_point).reshape(-1, 5) # todo hacer que calcen las dims xdxd
+
             points, labels = cloud_data[:, 0:4], cloud_data[:, 4].astype(int)  # xyzi, N*4; l, N
             tmp, _ = np.histogram(labels, range(self.num_classes + 1))
             labelweights += tmp
@@ -107,7 +112,39 @@ class FCFMDataset(Dataset):
         with open(file_path, 'rb') as f:
             data = pickle.load(f)
         return data
-        
+
+
+    def _process_lidar(batched_pts, voxel_size=0.08, max_points=5120):
+        process_lidar = []
+        for points in batched_pts:
+            coords = np.floor(points[:, :3] / voxel_size).astype(np.int32)
+            _, inv, counts = np.unique(coords, axis=0, return_inverse=True, return_counts=True)
+
+            # Sum xyz and intensity by voxel
+            # xyz_intensity = np.concatenate([points[:, :3], points[:, 3]], axis=1)
+            sums = np.zeros((counts.shape[0], 4), dtype=np.float32)
+            np.add.at(sums, inv, points[:, :4])
+
+            # Divide by counts to get mean per voxel
+            means = sums / counts[:, None]
+
+            N = means.shape[0]
+            if N > max_points:
+                indices = np.random.choice(N, max_points, replace=False)
+                means = means[indices]
+
+                if points.shape[1] == 5:
+                    labels = points[indices, 4]
+                    means = np.concatenate([means, labels])
+
+            elif N < max_points:
+                pad = np.zeros((max_points - N, 4), dtype=np.float32)
+                means = np.concatenate((means, pad), axis=0)
+            
+            process_lidar.append(means)
+
+        return np.array(process_lidar)
+
 
     def __len__(self):
         return len(self.data_paths)
@@ -120,8 +157,12 @@ class FCFMDataset(Dataset):
             labels = self.labels[idx]
 
         else:
-            data = self._read_pkl(os.path.join(self.data_root, self.data_paths[idx]))
-            cloud = np.stack(data[self.cloud_name]).reshape(-1, 5)
+            if self.cloud_name == 'lidar_dn':
+                data = self._read_pkl(os.path.join(self.data_root, self.data_paths[idx]))
+                cloud = np.stack(data[self.cloud_name]).reshape(-1, 5)
+            else:
+                raw_lidar = self._read_pkl(os.path.join(self.data_root, self.data_paths[idx]))[self.cloud_name]
+                cloud = self._process_lidar(raw_lidar, max_points=self.num_point).reshape(-1, 5)
 
             xyz = cloud[:, :3]
             intensity = cloud[:, 3]
